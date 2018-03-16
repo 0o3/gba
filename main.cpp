@@ -1,52 +1,27 @@
 #include <iostream>
-#include <memory>
 #include <thread>
-#include <functional>
-#include <SDL.h>
+#include <chrono>
+#include <SFML/Audio.hpp>
 
-bool g_quit = false;
+using namespace std::chrono_literals;
 
-void render_work(SDL_Window *win)
+int main(int argc, char **argv)
 {
-  auto screen = SDL_GetWindowSurface(win);
-
-  while (!g_quit) {
-  }
-}
-
-void event_work(SDL_Window *win)
-{
-  while (!g_quit) {
-    SDL_Event e;
-    while (SDL_PollEvent(&e)) {
-      if (e.type == SDL_QUIT) {
-        g_quit = true;
-        break;
-      }
-    }
-  }
-}
-
-int main()
-{
-  if (SDL_Init(SDL_INIT_VIDEO|SDL_INIT_AUDIO) != 0) {
-    std::cout << "unable to initialize SDL: " << SDL_GetError();
+  if (argc < 2) {
+    std::cerr << "need a path to sound file\n";
     return -1;
   }
 
-  auto win = SDL_CreateWindow(
-      "gba emulator",
-      SDL_WINDOWPOS_UNDEFINED,
-      SDL_WINDOWPOS_UNDEFINED,
-      640,
-      480,
-      SDL_WINDOW_SHOWN);
+  sf::SoundBuffer buffer;
+  if (!buffer.loadFromFile(argv[1])) {
+    std::cerr << "load file failed\n";
+    return -1;
+  }
 
-  auto render_thread = std::thread(std::bind(render_work, win));
-  event_work(win);
-  render_thread.join();
-
-  SDL_DestroyWindow(win);
-  SDL_Quit();
-  return 0;
+  sf::Sound sound;
+  sound.setBuffer(buffer);
+  sound.play();
+  while(sound.getStatus() != sf::SoundSource::Stopped) {
+    std::this_thread::sleep_for(1s);
+  }
 }
